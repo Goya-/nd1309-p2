@@ -51,7 +51,7 @@ class Blockchain {
 
   // Add new block
   addBlock(newBlock) {
-    console.log('add', newBlock)
+    console.log('Adding', newBlock)
 
     db.get('data', function (err, data) {
       if (data == undefined) return console.log('first init chain')
@@ -85,7 +85,7 @@ class Blockchain {
   // Get block height
   getBlockHeight() {
     db.get('data', function (err, value) {
-      console.log("getBlockHeight result is " + value.length - 1);
+      console.log("getBlockHeight result is " + (value.length - 1));
     })
   }
 
@@ -93,8 +93,9 @@ class Blockchain {
   getBlock(blockHeight) {
     db.get('data', function (err, data) {
       if (err) return console.log('Get block is err', err);
-      let block = data.blocks[blockHeight]
+      let block = data.blocks[blockHeight] 
       if (block == undefined) return console.log('Blockheight ' + blockHeight + ' is out of index.');
+      return console.log(`Block is `, block);
     })
   }
 
