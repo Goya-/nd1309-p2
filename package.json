@@ -4,7 +4,7 @@
   "description": "for course project submmit",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "app":" node --experimental-modules app.mjs"
+    "app": " node --experimental-modules app.mjs"
   },
   "author": "Goya",
   "license": "ISC",
