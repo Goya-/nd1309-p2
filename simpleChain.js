@@ -66,6 +66,7 @@ class Blockchain {
           newBlock.previousBlockHash = tempChain.blocks[tempChain.length - 1].hash;
         }
         // Block hash with SHA256 using newBlock and converting to a string
+        console.log(newBlock)
         newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
         // Adding block object to chain
         tempChain.blocks.push(newBlock);
@@ -103,6 +104,7 @@ class Blockchain {
         let block = data.blocks[blockHeight];
         if (block == undefined) {
           console.error('Blockheight ' + blockHeight + ' is out of index.');
+          reject(blockHeight)
         }else{
           //console.log(`Block is `, block);
           resolve(block);
