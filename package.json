@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "app": " node --experimental-modules app.mjs",
-    "server": "node --experimental-modules server.mjs"
+    "server": "node index.js"
   },
   "author": "Goya",
   "license": "ISC",
