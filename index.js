@@ -38,9 +38,23 @@ app.post(
 app.post(
     '/requestValidation',(req,res)=>{
         if(req.body.hasOwnProperty("address")){
-            notary.requestValidation(req.body.address).then(result => res.send(result));
+            notary.requestValidation(req.body.address)
+                .then(resolve => res.send(resolve))
+                .catch(reject=> res.send(reject));
         } else {
             res.send('error:request should like {"address":"XXXXXXXXXXXXX"}');
+        }
+    }
+);
+
+app.post(
+    '/message-signature/validate',(req,res)=>{
+        if (req.body.hasOwnProperty("address") && req.body.hasOwnProperty("signature")){
+            notary.validateMessage(req.body.address,req.body.signature)
+                .then(resolve =>res.send(resolve))
+                .catch(reject => res.send(reject));
+        } else {
+            res.send('error:request should like {"address":"XXXXXXX","signature":"xxxxxxxxx"}');
         }
     }
 );
