@@ -1,15 +1,17 @@
 const express = require('express');
 const simpleChain = require('./simpleChain');
 const bodyParser = require('body-parser');
+const notaryService = require('./NotaryService');
 
 const Blockchain =simpleChain.Blockchain;
 
 let blockchain = new Blockchain();
+let notary = new notaryService();
 
 const PORT = 8000;
 let app = express();
 
-app.use(bodyParser.json())
+app.use(bodyParser.json());
 
 // get block, return block json
 app.get(
@@ -17,7 +19,7 @@ app.get(
     blockchain.getBlock(req.params.height)
         .then(result => res.send(result))
         .catch(blockHeight => res.send({ error:'Blockheight '+ blockHeight + ' is out of index.'}))       
-})
+});
 
 // post block, return new block json
 app.post(
@@ -26,11 +28,20 @@ app.post(
         blockchain.addBlock(req.body)
             .then(_ => blockchain.getBlockHeight())
             .then(height =>{
-                blockchain.getBlock(height).then(block=>res.send(block))
-            })
+                blockchain.getBlock(height).then(block=>res.send(block));
+            });
     }else{
-        res.send('error:request should like {"body":"XXXXXXXXXXXXX"}')
+        res.send('error:request should like {"body":"XXXXXXXXXXXXX"}');
     }
-})
+});
 
-app.listen(PORT,() => console.log('run server on port '+PORT))
+app.post(
+    '/requestValidation',(req,res)=>{
+        if(req.body.hasOwnProperty("address")){
+            notary.requestValidation(req.body.address).then(result => res.send(result));
+        } else {
+            res.send('error:request should like {"address":"XXXXXXXXXXXXX"}');
+        }
+    }
+);
+app.listen(PORT,() => console.log('run server on port '+PORT));

@@ -9,14 +9,12 @@
 
 ## endpoint
 
-### Get block endpoint
+### requestValidation
 
-request example command:
-
-`curl -X "GET" "http://localhost:8000/block/0"`
-
-### Post block endpoint
-
-request example command:
-
-`curl -X "POST" "http://localhost:8000/block" -H 'Content-Type: application/json' -d $'{"body":"block body contents"}'`
+```
+curl -X "POST" "http://localhost:8000/requestValidation" \
+     -H 'Content-Type: application/json; charset=utf-8' \
+     -d $'{
+  "address": "142BDCeSGbXjWKaAnYXbMpZ6sbrSAo3DpZ"
+}'
+```
