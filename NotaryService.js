@@ -1,28 +1,15 @@
-// 1. requestValidation: address => message & validationWindow
-// 2. message-signature/validate: address & signature => validateResult
-
 const level = require('level');
 const chainDB = './notaryData';
 const db = level(chainDB, {
     valueEncoding: 'json'
 });
 
-const bitcoin = require('bitcoinjs-lib');
 const bitcoinMessage = require('bitcoinjs-message');
-
-// class Validation{
-//     constructor(address){
-//         this.address = address;
-//         this.requestTimeStamp = new Date.now();
-//         this.message = message;
-//         this.validationWindow = validationWindow;
-//     }
-// }
 
 class NotaryService{
     constructor(){
         this.validation = {};
-        this.validationWindowConf = 50;
+        this.validationWindowConf = 300; //5 minutes
     }
 
     requestValidation(address){
@@ -43,7 +30,7 @@ class NotaryService{
                             validationWindow = self.validationWindowConf - intervel;
                             requestTime = addressPool[address];
                         } else {
-                            // 间隔超过5分钟需要重新验证
+                            // need re-validate over validationWindowConf
                             validationWindow = self.validationWindowConf;
                             var _requestTime = Math.round(+new Date() / 1000);
                             addressPool[address] = _requestTime;
@@ -53,7 +40,7 @@ class NotaryService{
                             reject({"error":"over 5 minutes, re-validating"});
                         }
                     } else {
-                        // 第一次验证，需要添加地址到地址池
+                        // add address to addresspool in first validate
                         console.log("address no exits, creating...");
                         addressPool[address] = requestTime;
                         console.log(Object.keys(addressPool));
@@ -83,8 +70,6 @@ class NotaryService{
 
     validateMessage(address, signature) {
         return new Promise((resolve,reject)=>{
-            // 没有request过，或者request已经过期，返回fail，提醒先request
-            // request后验证message，如果验证失败返回fail，提醒确认签名。验证成功返回success。
             this.requestValidation(address).then(result=>{
                 var isValid = bitcoinMessage.verify(result.message, address, signature) ? "valid":"invalid";
                 resolve({

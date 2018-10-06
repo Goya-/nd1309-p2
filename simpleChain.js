@@ -108,6 +108,7 @@ class Blockchain {
 
   // get block
   getBlock(blockHeight) {
+    let self = this;
     return new Promise((resolve,reject)=>{
       db.get('data', function (err, data) {
         if (err) return console.log('Get block is err', err);
@@ -116,8 +117,8 @@ class Blockchain {
           console.error('Blockheight ' + blockHeight + ' is out of index.');
           reject(blockHeight)
         }else{
-          //console.log(`Block is `, block);
-          resolve(block);
+          //çconsole.log(`Block is `, block);
+          resolve(self.decodeBlocks(block));
         }
       });
     });
@@ -202,6 +203,44 @@ class Blockchain {
         }
       });
     });
+  }
+
+  getBlocksByAddress(address){
+    let self = this;
+    return new Promise((resolve, reject) => {
+      db.get('data', function (err, data) {
+        let tempChain = data;
+        let blocksByAddress = tempChain.blocks.filter(block =>block.body.address == address);
+        resolve(self.decodeBlocks(blocksByAddress));
+      });
+    });
+  }
+
+  getBlocksByHash(hash) {
+    let self = this;
+    return new Promise((resolve, reject) => {
+      db.get('data', function (err, data) {
+        let tempChain = data;
+        let blockByHash = tempChain.blocks.filter(block => block.hash == hash);
+        resolve(self.decodeBlocks(blockByHash)[0]);
+      });
+    });
+  }
+
+  decodeBlocks(blocks){
+    if(blocks.length==undefined){
+      // json
+        const buf = new Buffer(blocks.body.star.story, 'hex');
+        blocks.body.star.decode = buf.toString();
+    }else{
+      // array
+      for (let index = 0; index < blocks.length; index++) {
+        const block = blocks[index];
+        const buf = new Buffer(block.body.star.story, 'hex');
+        block.body.star.decode = buf.toString();
+      }
+    }
+    return blocks;
   }
 }
 

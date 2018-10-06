@@ -76,4 +76,18 @@ app.post(
         }
     }
 );
+
+app.get(
+    '/stars/address::ADDRESS',(req,res)=>{
+        console.log(req.params.ADDRESS)
+        blockchain.getBlocksByAddress(req.params.ADDRESS).then(result=>res.send(result));
+    }
+);
+
+app.get(
+    '/stars/hash::HASH', (req, res) => {
+        console.log(req.params.HASH)
+        blockchain.getBlocksByHash(req.params.HASH).then(result => res.send(result));
+    }
+);
 app.listen(PORT,() => console.log('run server on port '+PORT));
