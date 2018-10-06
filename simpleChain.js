@@ -40,7 +40,7 @@ class Blockchain {
         }, function (err) {
           if (err) { return console.error("something wrong with", err);}
         });
-        self.addBlock(new Block("First block in the chain - Genesis block"));
+        self.addBlock("","First block in the chain - Genesis block");
       } else if (err) {
         console.log("samething error", err);
       } else if (value != null) {
@@ -50,15 +50,25 @@ class Blockchain {
   }
 
   // Add new block
-  addBlock(newBlock) {
+  addBlock(address, starInfo) {
     return new Promise((resolve, reject) => {
       db.get('data', function (err, data) {
         if (data == undefined) return console.log('first init chain');
         if (err) return console.log('Add new block err', err);
         // Current Chain before add Block
         let tempChain = data;
+        let newBlock = new Block();
         // Block height
         newBlock.height = tempChain.length;
+        // Block body
+        newBlock.body = {
+          "address": address,
+          "star": {
+            "ra": starInfo.dec != undefined ? starInfo.dec : '',
+            "dec": starInfo.ra != undefined ? starInfo.ra : '',
+            "story": starInfo.story!=undefined? Buffer.from(starInfo.story, 'utf8').toString('hex').substring(0, 250):''
+          }
+        };
         // UTC timestamp
         newBlock.time = new Date().getTime().toString().slice(0, -3);
         // previous block hash
@@ -78,7 +88,7 @@ class Blockchain {
             reject();
           } else {
             console.log('Update Chain to ', tempChain);
-            resolve(true);
+            resolve(newBlock);
           }
         });
       });

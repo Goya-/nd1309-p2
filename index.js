@@ -24,14 +24,32 @@ app.get(
 // post block, return new block json
 app.post(
     '/block',(req,res)=>{ 
-    if(req.body.hasOwnProperty("body")){
-        blockchain.addBlock(req.body)
-            .then(_ => blockchain.getBlockHeight())
-            .then(height =>{
-                blockchain.getBlock(height).then(block=>res.send(block));
-            });
-    }else{
-        res.send('error:request should like {"body":"XXXXXXXXXXXXX"}');
+    // if(req.body.hasOwnProperty("body")){
+    //     blockchain.addBlock(req.body)
+    //         .then(_ => blockchain.getBlockHeight())
+    //         .then(height =>{
+    //             blockchain.getBlock(height).then(block=>res.send(block));
+    //         });
+    // }else{
+    //     res.send('error:request should like {"body":"XXXXXXXXXXXXX"}');
+    // }
+   
+    if (req.body.hasOwnProperty("address") && req.body.hasOwnProperty("star")) {
+        blockchain.addBlock(req.body.address, req.body.star)
+            .then(result => res.send(result))
+            .catch(_ => res.sendStatus(404));
+    } else {
+        res.send(`
+        error, request should like :
+        {
+            "address": "142BDCeSGbXjWKaAnYXbMpZ6sbrSAo3DpZ",
+            "star":{
+                "dec": "-26° 29' 24.9",
+                "ra": "16h 29m 1.0s",
+                "story": "Found star using https://www.google.com/sky/"
+            }
+        }       
+        `);
     }
 });
 
