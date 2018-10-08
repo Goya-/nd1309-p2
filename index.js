@@ -24,17 +24,8 @@ app.get(
 // post block, return new block json
 app.post(
     '/block',(req,res)=>{ 
-    // if(req.body.hasOwnProperty("body")){
-    //     blockchain.addBlock(req.body)
-    //         .then(_ => blockchain.getBlockHeight())
-    //         .then(height =>{
-    //             blockchain.getBlock(height).then(block=>res.send(block));
-    //         });
-    // }else{
-    //     res.send('error:request should like {"body":"XXXXXXXXXXXXX"}');
-    // }
-   
-    if (req.body.hasOwnProperty("address") && req.body.hasOwnProperty("star")) {
+    if (req.body.hasOwnProperty("address") && req.body.star.hasOwnProperty("ra")
+        && req.body.star.hasOwnProperty("dec") && req.body.star.hasOwnProperty("story")) {
         blockchain.addBlock(req.body.address, req.body.star)
             .then(result => res.send(result))
             .catch(_ => res.sendStatus(404));
@@ -70,7 +61,10 @@ app.post(
         if (req.body.hasOwnProperty("address") && req.body.hasOwnProperty("signature")){
             notary.validateMessage(req.body.address,req.body.signature)
                 .then(resolve =>res.send(resolve))
-                .catch(reject => res.send(reject));
+                .catch(reject => {
+                    console.log(reject)
+                    res.send(reject)
+                });
         } else {
             res.send('error:request should like {"address":"XXXXXXX","signature":"xxxxxxxxx"}');
         }

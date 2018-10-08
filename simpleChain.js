@@ -10,7 +10,9 @@ const SHA256 = require('crypto-js/sha256');
 
 const level = require('level');
 const chainDB = './chaindata';
-const db = level(chainDB, { valueEncoding: 'json' });
+const db = level(chainDB, {
+  valueEncoding: 'json'
+});
 
 /* ===== Block Class ==============================
 |  Class with a constructor for block 			   |
@@ -19,10 +21,10 @@ const db = level(chainDB, { valueEncoding: 'json' });
 class Block {
   constructor(data) {
     this.hash = "",
-    this.height = 0,
-    this.body = data,
-    this.time = 0,
-    this.previousBlockHash = ""
+      this.height = 0,
+      this.body = data,
+      this.time = 0,
+      this.previousBlockHash = ""
   }
 }
 
@@ -31,208 +33,156 @@ class Block {
 |  ================================================*/
 class Blockchain {
   constructor() {
-    let self = this;
-    db.get('data', function (err, value) {
+    db.get('data').then(value => {
       if (value == undefined) {
         db.put('data', {
           "length": 0,
           "blocks": []
-        }, function (err) {
-          if (err) { return console.error("something wrong with", err);}
-        });
-        self.addBlock("","First block in the chain - Genesis block");
-      } else if (err) {
-        console.log("samething error", err);
-      } else if (value != null) {
+        }).catch(err => console.error("something wrong with", err));
+      } else {
         console.log("chain is exists, read from database...");
       }
-    });
+    }).catch(err => console.log("samething error", err));
   }
 
-  // Add new block
-  addBlock(address, starInfo) {
-    return new Promise((resolve, reject) => {
-      db.get('data', function (err, data) {
-        if (data == undefined) return console.log('first init chain');
-        if (err) return console.log('Add new block err', err);
-        // Current Chain before add Block
-        let tempChain = data;
-        let newBlock = new Block();
-        // Block height
-        newBlock.height = tempChain.length;
-        // Block body
-        newBlock.body = {
-          "address": address,
-          "star": {
-            "ra": starInfo.dec != undefined ? starInfo.dec : '',
-            "dec": starInfo.ra != undefined ? starInfo.ra : '',
-            "story": starInfo.story!=undefined? Buffer.from(starInfo.story, 'utf8').toString('hex').substring(0, 250):''
-          }
-        };
-        // UTC timestamp
-        newBlock.time = new Date().getTime().toString().slice(0, -3);
-        // previous block hash
-        if (tempChain.length > 0) {
-          newBlock.previousBlockHash = tempChain.blocks[tempChain.length - 1].hash;
+  async addBlock(address, starInfo) {
+    try {
+      const data = await db.get('data');
+      if (data == undefined) return console.log('first init chain');
+      // Current Chain before add Block
+      let tempChain = data;
+      let newBlock = new Block();
+      // Block height
+      newBlock.height = tempChain.length;
+      // Block body
+      newBlock.body = {
+        "address": address,
+        "star": {
+          "ra": starInfo.dec != undefined ? starInfo.dec : '',
+          "dec": starInfo.ra != undefined ? starInfo.ra : '',
+          "story": starInfo.story != undefined ? Buffer.from(starInfo.story, 'utf8').toString('hex').substring(0, 250) : ''
         }
-        // Block hash with SHA256 using newBlock and converting to a string
-        console.log(newBlock)
-        newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-        // Adding block object to chain
-        tempChain.blocks.push(newBlock);
-        tempChain.length += 1;
-        // Update data asynchronously
-        db.put('data', tempChain, function (err) {
-          if (err) {
-            console.log('Ooops!', err);
-            reject();
-          } else {
-            console.log('Update Chain to ', tempChain);
-            resolve(newBlock);
-          }
-        });
-      });
-    });
+      };
+      // UTC timestamp
+      newBlock.time = new Date().getTime().toString().slice(0, -3);
+      // previous block hash
+      if (tempChain.length > 0) {
+        newBlock.previousBlockHash = tempChain.blocks[tempChain.length - 1].hash;
+      }
+      // Block hash with SHA256 using newBlock and converting to a string
+      console.log(newBlock)
+      newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+      // Adding block object to chain
+      tempChain.blocks.push(newBlock);
+      tempChain.length += 1;
+      try {
+        await db.put('data', tempChain);
+        console.log('Update Chain to ', tempChain);
+        return Promise.resolve(newBlock);
+      } catch (err) {
+        console.log('Ooops!', err);
+        return Promise.reject();
+      }
+    } catch (err) {
+      if (err) return console.log('Add new block err', err);
+    }
   }
 
   // Get block height
-  getBlockHeight(){
-    return new Promise((resolve,reject)=>{
-      db.get('data', function (err, value) {
-        const height = value.length - 1;
-        console.log("getBlockHeight result is "+height);
-        resolve(height);
-      });
-    });
+  async getBlockHeight() {
+    const value = await db.get('data');
+    const height = value.length - 1;
+    console.log("getBlockHeight result is " + height);
+    return Promise.resolve(height);
   }
 
   // get block
-  getBlock(blockHeight) {
-    let self = this;
-    return new Promise((resolve,reject)=>{
-      db.get('data', function (err, data) {
-        if (err) return console.log('Get block is err', err);
-        let block = data.blocks[blockHeight];
-        if (block == undefined) {
-          console.error('Blockheight ' + blockHeight + ' is out of index.');
-          reject(blockHeight)
-        }else{
-          //çconsole.log(`Block is `, block);
-          resolve(self.decodeBlocks(block));
-        }
-      });
-    });
+  async getBlock(blockHeight) {
+    const self = this;
+    try {
+      const data = await db.get('data');
+      const block = data.blocks[blockHeight];
+      if (block == undefined) {
+        console.error('Blockheight ' + blockHeight + ' is out of index.');
+        return Promise.reject(blockHeight);
+      } else {
+        return Promise.resolve(self.decodeBlocks(block));
+      }
+    } catch (err) {
+      return console.log('Get block is err', err);
+    }
   }
 
   // validate block
-  validateBlock(blockHeight) {
-    let self = this;
-    return new Promise((resolve,reject)=>{
-        // get block object
-         self.getBlock(blockHeight).then(result=>{
-          let block = result;
-          if (block == undefined) {
-            reject(console.error('Blockheight ' + blockHeight + ' is out of index.'))
-          }
-          // get block hash
-          let blockHash = block.hash;
-          // remove block hash to test block integrity
-          block.hash = '';
-          // generate block hash
-          let validBlockHash = SHA256(JSON.stringify(block)).toString();
-          // Compare
-          if (blockHash === validBlockHash) {
-            console.log('Block #' + blockHeight + ' is valid')
-            resolve(true);
-          } else {
-            console.log('Block #' + blockHeight + ' invalid hash:\n' + blockHash + '<>' + validBlockHash);
-            resolve(false);
-          }
-        });
-      });
+  async validateBlock(blockHeight) {
+    const self = this;
+    let block = await self.getBlock(blockHeight);
+    if (block == undefined) {
+      return Promise.reject(console.error('Blockheight ' + blockHeight + ' is out of index.'));
+      // get block hash
+      const blockHash = block.hash;
+      // remove block hash to test block integrity
+      block.hash = '';
+      // generate block hash
+      const validBlockHash = SHA256(JSON.stringify(block)).toString();
+      // Compare
+      if (blockHash === validBlockHash) {
+        console.log('Block #' + blockHeight + ' is valid')
+        return Promise.resolve(true);
+      } else {
+        console.log('Block #' + blockHeight + ' invalid hash:\n' + blockHash + '<>' + validBlockHash);
+        return Promise.resolve(false);
+      }
+    }
   }
 
   // Validate blockchain
-  validateChain() {
-    let self = this;
-    return new Promise((resolve, reject) => {
-      let errorLog = [];
-      db.get('data', function (err, data) {
-        if (err) return console.log('Read chain when validateChain is err', err);
-        self.getBlockHeight().then(height => {
-          for (var i = 0; i < height - 1; i++) {
-            let blockHash = data.blocks[i].hash;
-            let previousHash = data.blocks[i + 1].previousBlockHash;
-            if (blockHash !== previousHash) {
-              errorLog.push(i);
-            }
-          }
-          if (errorLog.length > 0) {
-            console.log('Block errors = ' + errorLog.length);
-            console.log('Blocks: ' + errorLog);
-            resolve(false);
-          } else {
-            console.log('No errors detected');
-            resolve(true);
-          }
-        });
-      });
-    });
-  }
-
-  // modify block's body to test
-  setBlockBodyForTest(index, bodyString) {
-    db.get('data', function (err, data) {
-      if (err) return console.log('Read chain when validateChain is err', err);
-      let templateChain = data;
-      let block = templateChain.blocks[index];
-      if (block == undefined) return console.log('Block # ' + index + ' is out of index.');
-
-      block.body = bodyString;
-      console.log('old hash is ' + block.hash);
-      block.hash = SHA256(JSON.stringify(block)).toString();
-      console.log('new hash is ' + block.hash);
-
-
-      // Update data asynchronously
-      db.put('data', templateChain, function (err) {
-        if (err) {
-          return console.log('Ooops!', err);
-        } else {
-          return console.log('Update Block #' + index + ' body to ' + bodyString);
+  async validateChain() {
+    const self = this;
+    let errorLog = [];
+    try {
+      const data = await db.get('data');
+      const height = self.getBlockHeight();
+      for (var i = 0; i < height - 1; i++) {
+        let blockHash = data.blocks[i].hash;
+        let previousHash = data.blocks[i + 1].previousBlockHash;
+        if (blockHash !== previousHash) {
+          errorLog.push(i);
         }
-      });
-    });
+      }
+      if (errorLog.length > 0) {
+        console.log('Block errors = ' + errorLog.length);
+        console.log('Blocks: ' + errorLog);
+        return Promise.resolve(false);
+      } else {
+        console.log('No errors detected');
+        return Promise.resolve(true);
+      }
+    } catch (err) {
+      return console.log('Read chain when validateChain is err', err)
+    }
   }
 
-  getBlocksByAddress(address){
-    let self = this;
-    return new Promise((resolve, reject) => {
-      db.get('data', function (err, data) {
-        let tempChain = data;
-        let blocksByAddress = tempChain.blocks.filter(block =>block.body.address == address);
-        resolve(self.decodeBlocks(blocksByAddress));
-      });
-    });
-  }
+  async getBlocksByAddress(address) {
+    const self = this;
+    const tempChain = await db.get('data');
+    const blocksByAddress = tempChain.blocks.filter(block => block.body.address == address);
+    return Promise.resolve(self.decodeBlocks(blocksByAddress));
+  };
 
-  getBlocksByHash(hash) {
-    let self = this;
-    return new Promise((resolve, reject) => {
-      db.get('data', function (err, data) {
-        let tempChain = data;
-        let blockByHash = tempChain.blocks.filter(block => block.hash == hash);
-        resolve(self.decodeBlocks(blockByHash)[0]);
-      });
-    });
-  }
+  async getBlocksByHash(hash){
+    const self = this;
+    const tempChain = await db.get('data');
+    const blockByHash = tempChain.blocks.filter(block => block.hash == hash);
+    return Promise.resolve(self.decodeBlocks(blockByHash)[0]);
+  };
 
-  decodeBlocks(blocks){
-    if(blocks.length==undefined){
+  decodeBlocks(blocks) {
+    if (blocks.length == undefined) {
       // json
-        const buf = new Buffer(blocks.body.star.story, 'hex');
-        blocks.body.star.decode = buf.toString();
-    }else{
+      const buf = new Buffer(blocks.body.star.story, 'hex');
+      blocks.body.star.decode = buf.toString();
+    } else {
       // array
       for (let index = 0; index < blocks.length; index++) {
         const block = blocks[index];
@@ -244,4 +194,7 @@ class Blockchain {
   }
 }
 
-module.exports = { Block, Blockchain };
+module.exports = {
+  Block,
+  Blockchain
+};
