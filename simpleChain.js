@@ -34,21 +34,19 @@ class Block {
 class Blockchain {
   constructor() {
     db.get('data').then(value => {
-      if (value == undefined) {
-        db.put('data', {
-          "length": 0,
-          "blocks": []
-        }).catch(err => console.error("something wrong with", err));
-      } else {
-        console.log("chain is exists, read from database...");
-      }
-    }).catch(err => console.log("samething error", err));
+      console.log("chain is exists, read from database...");
+    }).catch(err => {
+      console.log("init chain...")
+      db.put('data', {
+        "length": 0,
+        "blocks": []
+      }).catch(err => console.error("something wrong with", err));
+    });
   }
 
   async addBlock(address, starInfo) {
     try {
       const data = await db.get('data');
-      if (data == undefined) return console.log('first init chain');
       // Current Chain before add Block
       let tempChain = data;
       let newBlock = new Block();
@@ -170,7 +168,7 @@ class Blockchain {
     return Promise.resolve(self.decodeBlocks(blocksByAddress));
   };
 
-  async getBlocksByHash(hash){
+  async getBlocksByHash(hash) {
     const self = this;
     const tempChain = await db.get('data');
     const blockByHash = tempChain.blocks.filter(block => block.hash == hash);
