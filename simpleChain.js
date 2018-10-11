@@ -1,13 +1,4 @@
-/* ===== SHA256 with Crypto-js ===============================
-|  Learn more: Crypto-js: https://github.com/brix/crypto-js  |
-|  =========================================================*/
-
 const SHA256 = require('crypto-js/sha256');
-
-/* ===== Persist data with LevelDB ===================================
-|  Learn more: level: https://github.com/Level/level     |
-|  =============================================================*/
-
 const level = require('level');
 const chainDB = './chaindata';
 const notaryDb = require('./NotaryService').Notarydb;
@@ -15,10 +6,6 @@ const notaryDb = require('./NotaryService').Notarydb;
 const db = level(chainDB, {
   valueEncoding: 'json'
 });
-
-/* ===== Block Class ==============================
-|  Class with a constructor for block 			   |
-|  ===============================================*/
 
 class Block {
   constructor(data) {

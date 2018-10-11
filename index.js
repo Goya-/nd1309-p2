@@ -2,7 +2,8 @@ const express = require('express');
 const simpleChain = require('./simpleChain');
 const bodyParser = require('body-parser');
 const notaryService = require('./NotaryService').NotaryService;
-
+const Validator = require('jsonschema').Validator;
+const v = new Validator();
 const Blockchain =simpleChain.Blockchain;
 
 let blockchain = new Blockchain();
@@ -24,8 +25,33 @@ app.get(
 // post block, return new block json
 app.post(
     '/block',(req,res)=>{ 
-    if (req.body.hasOwnProperty("address") && req.body.star.hasOwnProperty("ra")
-        && req.body.star.hasOwnProperty("dec") && req.body.star.hasOwnProperty("story")) {
+    const reqSchema = {
+        "type": "object",    
+        "properties": {
+            "address": {"type":"string"},
+            "star":{
+                "type": "object",
+                "required":["dec","ra","story"],
+                "properties": {
+                    "dec": {
+                        "type": "string",
+                        "pattern": "^(\-?\\d+)°\\s(\-?\\d+)'\\s(\-?\\d+(\.\\d+)?)\"$"
+                    },
+                    "ra": {
+                        "type": "string",
+                        "pattern": "^\\d+h\\s\\d+m\\s\\d+(\.\\d+)?s$"
+                    },
+                    "story": {
+                        "type": "string",
+                        "pattern": "^[\x20-\x7F]{1,250}$"
+                    }
+                }
+            },
+        }
+    }
+    const validatorResult = v.validate(req.body, reqSchema);
+    // console.log("validator result", validatorResult);
+    if (validatorResult.valid) {
         blockchain.addBlock(req.body.address, req.body.star)
             .then(result => res.send(result))
             .catch(reject => res.send(reject));
@@ -35,9 +61,9 @@ app.post(
         {
             "address": "142BDCeSGbXjWKaAnYXbMpZ6sbrSAo3DpZ",
             "star":{
-                "dec": "-26° 29' 24.9",
+                "dec": "-26° 29' 24.9"",
                 "ra": "16h 29m 1.0s",
-                "story": "Found star using https://www.google.com/sky/"
+                "story": "Found star using https://www.google.com/sky/(max 250 words)"
             }
         }       
         `);
