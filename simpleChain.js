@@ -52,11 +52,14 @@ class Blockchain {
 
       // 只有在validationPool且valid为true，才给addBlock
       const validPool = await notaryDb.get('validPool');
-      const result = validPool.filter(object => object.address == address && object.valid)
-      console.log("validPool filter result:", result);
-      if (result.length == 0) return Promise.reject({
+      const validPoolFilterResult = validPool.filter(object => object.address == address && object.valid)
+      //console.log("validPool filter result:", validPoolFilterResult);
+      if (validPoolFilterResult.length == 0) return Promise.reject({
         "error": "Your address isn't valid for register, please requestValidation again"
       })
+      // one validation only allow one resigster,remove result from validPool 
+      await notaryDb.put('validPool', validPool.filter(object => object.address != address));
+      //notaryDb.get('validPool').then(resolve=>console.log("resolve remain address:",resolve))
 
       // Current Chain before add Block
       let tempChain = data;
