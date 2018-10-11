@@ -16,7 +16,7 @@ class NotaryService {
     }
 
     // Update all address's validationWindow
-    // if address in validPool，update request time and message
+    // if address in validPool，update request time ,validationWindow and message
     // if address is not in  validPool，add address into validationPool
     async requestValidation(address) {
         try {
@@ -34,7 +34,9 @@ class NotaryService {
             try {
                 validationPool.forEach(element => {
                     const oldTime = element.requestTimeStamp;
-                    element.validationWindow = validationWindow - (Math.round(+new Date() / 1000) - oldTime);
+                    element.requestTimeStamp = Math.round(+new Date() / 1000);
+                    element.validationWindow = validationWindow - (element.requestTimeStamp - oldTime);
+                    element.message = address + ":" + element.requestTimeStamp + ":" + "starRegistry";
                 });
                 let validationIndex = validationPool.findIndex(validation => validation.address == address);
                 let updateValidation = validationPool[validationIndex]
