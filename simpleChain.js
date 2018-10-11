@@ -10,6 +10,8 @@ const SHA256 = require('crypto-js/sha256');
 
 const level = require('level');
 const chainDB = './chaindata';
+const notaryDb = require('./NotaryService').Notarydb;
+
 const db = level(chainDB, {
   valueEncoding: 'json'
 });
@@ -47,6 +49,15 @@ class Blockchain {
   async addBlock(address, starInfo) {
     try {
       const data = await db.get('data');
+
+      // 只有在validationPool且valid为true，才给addBlock
+      const validPool = await notaryDb.get('validPool');
+      const result = validPool.filter(object => object.address == address && object.valid)
+      console.log("validPool filter result:", result);
+      if (result.length == 0) return Promise.reject({
+        "error": "Your address isn't valid for register, please requestValidation again"
+      })
+
       // Current Chain before add Block
       let tempChain = data;
       let newBlock = new Block();
@@ -75,7 +86,7 @@ class Blockchain {
       tempChain.length += 1;
       try {
         await db.put('data', tempChain);
-        console.log('Update Chain to ', tempChain);
+        //console.log('Update Chain to ', tempChain);
         return Promise.resolve(newBlock);
       } catch (err) {
         console.log('Ooops!', err);

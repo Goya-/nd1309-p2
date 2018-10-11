@@ -1,7 +1,7 @@
 const express = require('express');
 const simpleChain = require('./simpleChain');
 const bodyParser = require('body-parser');
-const notaryService = require('./NotaryService');
+const notaryService = require('./NotaryService').NotaryService;
 
 const Blockchain =simpleChain.Blockchain;
 
@@ -28,7 +28,7 @@ app.post(
         && req.body.star.hasOwnProperty("dec") && req.body.star.hasOwnProperty("story")) {
         blockchain.addBlock(req.body.address, req.body.star)
             .then(result => res.send(result))
-            .catch(_ => res.sendStatus(404));
+            .catch(reject => res.send(reject));
     } else {
         res.send(`
         error, request should like :
@@ -62,7 +62,6 @@ app.post(
             notary.validateMessage(req.body.address,req.body.signature)
                 .then(resolve =>res.send(resolve))
                 .catch(reject => {
-                    console.log(reject)
                     res.send(reject)
                 });
         } else {
@@ -73,15 +72,17 @@ app.post(
 
 app.get(
     '/stars/address::ADDRESS',(req,res)=>{
-        console.log(req.params.ADDRESS)
         blockchain.getBlocksByAddress(req.params.ADDRESS).then(result=>res.send(result));
     }
 );
 
 app.get(
     '/stars/hash::HASH', (req, res) => {
-        console.log(req.params.HASH)
         blockchain.getBlocksByHash(req.params.HASH).then(result => res.send(result));
     }
 );
+
+app.get('/validationPool',(req,res)=>{
+    notary.getValidationPool().then(resolve=>res.send(resolve))
+})
 app.listen(PORT,() => console.log('run server on port '+PORT));

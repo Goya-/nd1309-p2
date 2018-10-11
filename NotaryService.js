@@ -32,17 +32,13 @@ class NotaryService {
             let validationPool = await db.get('validPool');
 
             try {
-                validationPool.forEach(element => {
-                    const oldTime = element.requestTimeStamp;
-                    element.requestTimeStamp = Math.round(+new Date() / 1000);
-                    element.validationWindow = validationWindow - (element.requestTimeStamp - oldTime);
-                    element.message = address + ":" + element.requestTimeStamp + ":" + "starRegistry";
-                });
+                validationPool = this.updateValidationPool(validationPool)
                 let validationIndex = validationPool.findIndex(validation => validation.address == address);
                 let updateValidation = validationPool[validationIndex]
                 updateValidation.requestTimeStamp = requestTime.toString();
                 updateValidation.validationWindow = validationWindow;
                 updateValidation.message = address + ":" + requestTime + ":" + "starRegistry";
+                updateValidation.valid = false;
                 console.log("After update validationPool: ", validationPool)
             } catch (err) {
                 validationPool.push(newValidation)
@@ -64,7 +60,7 @@ class NotaryService {
     async validateMessage(address, signature) {
         const validationPool =  await db.get('validPool');
         const oldValidation = validationPool.filter(validation => validation.address == address);
-        console.log('oldValidation',oldValidation);
+        // console.log('oldValidation',oldValidation);
         oldValidation[0].validationWindow = this.validationWindowConf - (Math.round(+new Date() / 1000) - oldValidation[0].requestTimeStamp) //update validation
         if(oldValidation.length == 0){
             return Promise.reject({
@@ -79,7 +75,20 @@ class NotaryService {
             const result = oldValidation[0]
             try{
                 const verifyResult  = bitcoinMessage.verify(result.message, address, signature);
-                verifyValidation = verifyResult? "valid": "invalid"
+                if(verifyResult){
+                    verifyValidation = "valid";
+                    result.valid = true
+                    // update validPool
+                    let objIndex = validationPool.findIndex(obj => obj.address == result.address)
+                    validationPool[objIndex].valid = true
+                    // console.log("validationPool after update valid",validationPool);
+                    db.put('validPool', validationPool)
+                        .catch(reject=>console.log("reject:",reject))
+                        // .then(_=>db.get('validPool').then(resolve=>console.log("resolve:",resolve)))
+                }else{
+                    verifyValidation = "invalid"
+                }
+                
             }catch(err){
                 verifyValidation = "invalid"
             }
@@ -96,6 +105,33 @@ class NotaryService {
             });
         }
     }
+
+    updateValidationPool(validateArray){
+        console.log("validateArray input",validateArray);
+        validateArray.forEach(element => {
+            const oldTime = element.requestTimeStamp;
+            element.requestTimeStamp = Math.round(+new Date() / 1000);
+            element.validationWindow = this.validationWindowConf - (element.requestTimeStamp - oldTime);
+            element.message = element.address + ":" + element.requestTimeStamp + ":" + "starRegistry";
+        });
+        console.log("validateArray foreach after",validateArray);
+        return validateArray
+    }
+
+    // for test
+    async getValidationPool(){
+        try {
+            let validationPool = await db.get('validPool');
+            // console.log("validationPool before update:", validationPool);
+            validationPool = this.updateValidationPool(validationPool)
+            // console.log("validationPool after update:", validationPool);
+            return Promise.resolve(validationPool)   
+        } catch (error) {
+            // console.log("getValidationPool",error);
+            return Promise.reject(error)
+        }
+    }
 }
 
-module.exports = NotaryService;
+module.exports.NotaryService = NotaryService;
+module.exports.Notarydb = db;
